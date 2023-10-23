@@ -11,6 +11,9 @@ namespace Models
         [Column("api_key")]
         public string ApiKey { get; set; }
 
+        [Column("secret")]
+        public string Secret { get; set; }
+
         [Column("strategy")]
         public string Strategy { get; set; }
     }
@@ -21,6 +24,7 @@ namespace Models
  CREATE TABLE "btasks" (
   "id" SERIAL PRIMARY KEY,
   "api_key"  VARCHAR(64) NOT NULL,
+  "secret"   VARCHAR(64) NOT NULL,
   "strategy" VARCHAR(64) NOT NULL
 );
 */

@@ -1,27 +1,25 @@
-using System;
-using System.Threading;
-
-// C# program to illustrate the
-// creation of thread using
-// non-static method
-using System;
-using System.Threading;
-using System.Security.Cryptography.X509Certificates;
+using Models;
+using Binance.Net.Clients;
+using CryptoExchange.Net.Authentication;
+using CryptoExchange.Net.Objects;
+using Binance.Net.Objects;
 
 namespace Jobs {
 public class BJob {
     public int Id { get; set; }
     public string ApiKey { get; set; }
+    public string Secret { get; set; }
     public string Strategy { get; set; }
 
     protected Thread? BThread { get; set; }
     protected bool ShallTerminate { get; set; }
 
-    public BJob(int _id, string _apiKey, string _strategy)
+    public BJob(BTask btask)
     {
-        Id = _id;
-        ApiKey =_apiKey;
-        Strategy = _strategy;
+        Id = btask.Id;
+        ApiKey = btask.ApiKey;
+        Strategy = btask.Strategy;
+        Secret = btask.Secret;
         ShallTerminate = false;
         BThread = new (new ThreadStart(BBJob)) { Name = "Binance job " + Id };
     }
@@ -39,12 +37,42 @@ public class BJob {
             ShallTerminate = true;
         }
     }
-    public void BBJob()
+    public async void BBJob()
     {
         bool _shallTerminate = false;
-        for (int z = 0; z < 30000 && !_shallTerminate; z++) {
+
+        BinanceRestClient.SetDefaultOptions(options =>
+        {
+            options.ApiCredentials = new ApiCredentials(ApiKey, Secret);
+        });
+        BinanceSocketClient.SetDefaultOptions(options =>
+        {
+            options.ApiCredentials = new ApiCredentials(ApiKey, Secret);
+        });
+        var client = new BinanceRestClient();
+
+
+        while (!_shallTerminate) {
             Console.WriteLine("{0} -- strategy: {1}", Thread.CurrentThread.Name, Strategy);
-            Thread.Sleep(1000);
+            // Get the account info
+            var accountInfo = await client.SpotApi.Account.GetAccountInfoAsync();
+
+            // Check if the response was successful
+            if (accountInfo.Success)
+            {
+                foreach (var balance in accountInfo.Data.Balances)
+                {
+                    if (balance.Total > 0) {
+                        Console.WriteLine($"{balance.Asset}: {balance.Total}");
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Error: {accountInfo.Error?.Message}");
+            }
+
+            Thread.Sleep(1000 * 60);   /* 60 seconds */
             lock(this) {
                 _shallTerminate = ShallTerminate;
             }

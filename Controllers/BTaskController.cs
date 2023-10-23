@@ -43,8 +43,8 @@ public class BTasksController : ControllerBase
   {
     _context.BTasks.Add(btask);
     await _context.SaveChangesAsync();
-    BJob _bJob = new (btask.Id, btask.ApiKey, btask.Strategy);
-    BJobs.Instance.Add(btask.Id, _bJob);
+    BJob _bJob = new (btask);
+    BJobs.AddBJob(_bJob);
     _bJob.Start();
     return CreatedAtAction(nameof(GetBTask), new { id = btask.Id }, btask);
   }
@@ -100,9 +100,7 @@ foreach( KeyValuePair<int, BJob> kvp in BJobs.Instance )
 }
 
     try {
-      BJob _bJob = BJobs.Instance[id];
-      BJobs.Instance.Remove(id);
-      _bJob.Stop();
+      BJobs.RemoveBJob(id);
     }
     catch(KeyNotFoundException) {
             Console.WriteLine("Did not find BJob with id = {0}", id);
