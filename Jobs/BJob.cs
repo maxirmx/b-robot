@@ -49,6 +49,8 @@ public class BJob {
         {
             options.ApiCredentials = new ApiCredentials(ApiKey, Secret);
         });
+
+        Console.WriteLine("Starting {0} -- strategy: {1}", Thread.CurrentThread.Name, Strategy);
         var client = new BinanceRestClient();
 
 
