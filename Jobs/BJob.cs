@@ -1,15 +1,16 @@
+using System.Text.Json;
 using Models;
 using Binance.Net.Clients;
 using CryptoExchange.Net.Authentication;
 using CryptoExchange.Net.Objects;
-using Binance.Net.Objects;
+using Binance.Net.Enums;
 
 namespace Jobs {
 public class BJob {
     public int Id { get; set; }
     public string ApiKey { get; set; }
     public string Secret { get; set; }
-    public string Strategy { get; set; }
+    public IStrategy Strategy { get; set; }
 
     protected Thread? BThread { get; set; }
     protected bool ShallTerminate { get; set; }
@@ -18,7 +19,8 @@ public class BJob {
     {
         Id = btask.Id;
         ApiKey = btask.ApiKey;
-        Strategy = btask.Strategy;
+        _ = decimal.TryParse(btask.Threshold, out decimal threshold);
+        Strategy = BStrategyFactory.CreateStategy( btask.Strategy, btask.Symbol1, btask.Symbol2, threshold );
         Secret = btask.Secret;
         ShallTerminate = false;
         BThread = new (new ThreadStart(BBJob)) { Name = "Binance job " + Id };
@@ -29,52 +31,31 @@ public class BJob {
         Stop();
         BThread?.Join();
     }
-    public void Start() {
+    public void Start()
+    {
         BThread?.Start();
     }
-    public void Stop() {
+    public void Stop()
+    {
         lock(this) {
             ShallTerminate = true;
         }
     }
-    public async void BBJob()
+    public void BBJob()
     {
         bool _shallTerminate = false;
+        string threadName = Thread.CurrentThread.Name ?? "unknown";
 
-        BinanceRestClient.SetDefaultOptions(options =>
-        {
-            options.ApiCredentials = new ApiCredentials(ApiKey, Secret);
-        });
-        BinanceSocketClient.SetDefaultOptions(options =>
-        {
-            options.ApiCredentials = new ApiCredentials(ApiKey, Secret);
-        });
+        BinanceRestClient.SetDefaultOptions(options => { options.ApiCredentials = new ApiCredentials(ApiKey, Secret); });
+//        BinanceSocketClient.SetDefaultOptions(options => { options.ApiCredentials = new ApiCredentials(ApiKey, Secret); });
 
-        Console.WriteLine("Starting {0} -- strategy: {1}", Thread.CurrentThread.Name, Strategy);
+        Console.WriteLine($"Starting {threadName} -- strategy: {Strategy.GetName()}");
         var client = new BinanceRestClient();
 
 
         while (!_shallTerminate) {
-            Console.WriteLine("{0} -- strategy: {1}", Thread.CurrentThread.Name, Strategy);
-            // Get the account info
-            var accountInfo = await client.SpotApi.Account.GetAccountInfoAsync();
-
-            // Check if the response was successful
-            if (accountInfo.Success)
-            {
-                foreach (var balance in accountInfo.Data.Balances)
-                {
-                    if (balance.Total > 0) {
-                        Console.WriteLine($"{balance.Asset}: {balance.Total}");
-                    }
-                }
-            }
-            else
-            {
-                Console.WriteLine($"Error: {accountInfo.Error?.Message}");
-            }
-
-            Thread.Sleep(1000 * 60);   /* 60 seconds */
+            Strategy.ProcessTick(threadName, client);
+            Thread.Sleep(1000 * 5);   /* 5 seconds */
             lock(this) {
                 _shallTerminate = ShallTerminate;
             }
