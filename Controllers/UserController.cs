@@ -9,6 +9,8 @@ namespace b_robot_api.Controllers;
 [Route("api/[controller]")]
 public class UsersController : ControllerBase
 {
+  private const string _errorUserExists = "Пользователь с таким адресом электронной почты уже зарегистрирован.";
+
   private readonly UserContext _context;
 
   public UsersController(UserContext context)
@@ -18,9 +20,9 @@ public class UsersController : ControllerBase
 
   // GET: api/users
   [HttpGet]
-  public async Task<ActionResult<IEnumerable<User>>> GetUsers()
+  public async Task<ActionResult<IEnumerable<UserViewItem>>> GetUsers()
   {
-    return await _context.Users.ToListAsync();
+    return await _context.UserViewItems();
   }
 
   // GET: api/users/5
@@ -39,23 +41,34 @@ public class UsersController : ControllerBase
 
   // POST: api/users
   [HttpPost]
-  public async Task<ActionResult<User>> PostUser(User user)
+  public async Task<ActionResult<Reference>> PostUser(User user)
   {
+    if (_context.Exists(user.Email)) return Conflict(new { message = _errorUserExists }) ;
+
+    string hashToStoreInDb = BCrypt.Net.BCrypt.HashPassword(user.Password);
+    user.Password = hashToStoreInDb;
+
     _context.Users.Add(user);
     await _context.SaveChangesAsync();
 
-    return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
+    var reference = new Reference(user.Id) { Id = user.Id };
+    return CreatedAtAction(nameof(GetUser), new { id = user.Id }, reference);
   }
 
   // PUT: api/users/5
   [HttpPut("{id}")]
-  public async Task<IActionResult> PutUser(int id, User user)
+  public async Task<IActionResult> PutUser(int id, UserUpdateItem update)
   {
-    if (id != user.Id)
-    {
-      return BadRequest();
-    }
+    var user = await _context.Users.FindAsync(id);
+    if (user == null) return NotFound();
 
+    user.FirstName = update.FirstName;
+    user.LastName = update.LastName;
+    user.Patronimic = update.Patronimic;
+    user.Email = update.Email;
+    user.ApiKey = update.ApiKey;
+
+    if (update.Password)
     _context.Entry(user).State = EntityState.Modified;
 
     try
@@ -64,7 +77,7 @@ public class UsersController : ControllerBase
     }
     catch (DbUpdateConcurrencyException)
     {
-      if (!UserExists(id))
+      if (!_context.Exists(id))
       {
         return NotFound();
       }
@@ -82,10 +95,7 @@ public class UsersController : ControllerBase
   public async Task<IActionResult> DeleteUser(int id)
   {
     var user = await _context.Users.FindAsync(id);
-    if (user == null)
-    {
-      return NotFound();
-    }
+    if (user == null) return NotFound();
 
     _context.Users.Remove(user);
     await _context.SaveChangesAsync();
@@ -93,15 +103,4 @@ public class UsersController : ControllerBase
     return NoContent();
   }
 
-  private bool UserExists(int id)
-  {
-    return _context.Users.Any(e => e.Id == id);
-  }
-
-  // dummy method to test the connection
-  [HttpGet("hello")]
-  public string Test()
-  {
-    return "Hello World!";
-  }
 }
