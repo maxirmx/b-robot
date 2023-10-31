@@ -1,4 +1,4 @@
-namespace Jobs {
+namespace b_robot_api.Jobs;
 public sealed class BJobs : Dictionary<int, BJob>
 {
     private static readonly Lazy<BJobs> lazy = new (() => new BJobs());
@@ -34,5 +34,4 @@ public sealed class BJobs : Dictionary<int, BJob>
     private BJobs()
     {
     }
-}
 }

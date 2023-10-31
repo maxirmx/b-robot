@@ -1,12 +1,10 @@
-using System.Text.Json;
-using Models;
+using b_robot_api.Models;
 using Binance.Net.Clients;
 using CryptoExchange.Net.Authentication;
-using CryptoExchange.Net.Objects;
-using Binance.Net.Enums;
 
-namespace Jobs {
-public class BJob {
+namespace b_robot_api.Jobs;
+public class BJob
+{
     public int Id { get; set; }
     public string ApiKey { get; set; }
     public string Secret { get; set; }
@@ -15,13 +13,13 @@ public class BJob {
     protected Thread? BThread { get; set; }
     protected bool ShallTerminate { get; set; }
 
-    public BJob(BTask btask)
+    public BJob(BTask btask, User user)
     {
         Id = btask.Id;
-        ApiKey = btask.ApiKey;
+        ApiKey = user.ApiKey;
         _ = decimal.TryParse(btask.Threshold, out decimal threshold);
         Strategy = BStrategyFactory.CreateStategy( btask.Strategy, btask.Symbol1, btask.Symbol2, threshold );
-        Secret = btask.Secret;
+        Secret = user.ApiSecret;
         ShallTerminate = false;
         BThread = new (new ThreadStart(BBJob)) { Name = "Binance job " + Id };
     }
@@ -61,5 +59,4 @@ public class BJob {
             }
         }
     }
-}
 }

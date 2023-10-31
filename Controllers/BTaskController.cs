@@ -1,33 +1,37 @@
-using Data;
-using Models;
-using Jobs;
+using b_robot_api.Authorization;
+using b_robot_api.Data;
+using b_robot_api.Jobs;
+using b_robot_api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+
 namespace b_robot_api.Controllers;
 
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class BTasksController : ControllerBase
 {
-  private readonly BTaskContext _context;
+  private readonly BTaskContext btaskContext;
+
   public BTasksController(BTaskContext context)
   {
-    _context = context;
+    btaskContext = context;
   }
 
   // GET: api/btasks
   [HttpGet]
   public async Task<ActionResult<IEnumerable<BTask>>> GetBTasks()
   {
-    return await _context.BTasks.ToListAsync();
+    return await btaskContext.BTasks.ToListAsync();
   }
 
   // GET: api/btasks/5
   [HttpGet("{id}")]
   public async Task<ActionResult<BTask>> GetBTask(int id)
   {
-    var btask = await _context.BTasks.FindAsync(id);
+    var btask = await btaskContext.BTasks.FindAsync(id);
 
     if (btask == null)
     {
@@ -37,16 +41,23 @@ public class BTasksController : ControllerBase
     return btask;
   }
 
-  // POST: api/btasks
-  [HttpPost]
+  // POST: api/btasks/add
+  [HttpPost("add")]
   public async Task<ActionResult<BTask>> PostBTask(BTask btask)
   {
-    _context.BTasks.Add(btask);
-    await _context.SaveChangesAsync();
-    BJob _bJob = new (btask);
-    BJobs.AddBJob(_bJob);
-    _bJob.Start();
-    return CreatedAtAction(nameof(GetBTask), new { id = btask.Id }, btask);
+    btaskContext.BTasks.Add(btask);
+    await btaskContext.SaveChangesAsync();
+
+    var user = await btaskContext.Users.FindAsync(btask.UserId);
+    if (user == null) return BadRequest(new { message = $"Не удалось найти информацию о пользователе [{btask.UserId}]" } );
+
+    BJob bj = new (btask, user);
+    BJobs.AddBJob(bj);
+//    _bJob.Start();
+
+    var reference = new Reference(user.Id) { Id = btask.Id };
+    return CreatedAtAction(nameof(GetBTask), new { id = btask.Id }, reference);
+
   }
 
   // PUT: api/btasks/5
@@ -58,11 +69,11 @@ public class BTasksController : ControllerBase
       return BadRequest();
     }
 
-    _context.Entry(btask).State = EntityState.Modified;
+    btaskContext.Entry(btask).State = EntityState.Modified;
 
     try
     {
-      await _context.SaveChangesAsync();
+      await btaskContext.SaveChangesAsync();
     }
     catch (DbUpdateConcurrencyException)
     {
@@ -83,14 +94,14 @@ public class BTasksController : ControllerBase
   [HttpDelete("{id}")]
   public async Task<IActionResult> DeleteBTask(int id)
   {
-    var btask = await _context.BTasks.FindAsync(id);
+    var btask = await btaskContext.BTasks.FindAsync(id);
     if (btask == null)
     {
       return NotFound();
     }
 
-    _context.BTasks.Remove(btask);
-    await _context.SaveChangesAsync();
+    btaskContext.BTasks.Remove(btask);
+    await btaskContext.SaveChangesAsync();
 
     try {
       BJobs.RemoveBJob(id);
@@ -104,7 +115,7 @@ public class BTasksController : ControllerBase
 
   private bool BTaskExists(int id)
   {
-    return _context.BTasks.Any(e => e.Id == id);
+    return btaskContext.BTasks.Any(e => e.Id == id);
   }
 
   // dummy method to test the connection
