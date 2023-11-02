@@ -45,8 +45,7 @@ public class UsersController : BControllerBase
 
     if (userContext.Exists(user.Email)) return _409Email(user.Email) ;
 
-    string hashToStoreInDb = BCrypt.Net.BCrypt.HashPassword(user.Password);
-    user.Password = hashToStoreInDb;
+    user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
 
     userContext.Users.Add(user);
     await userContext.SaveChangesAsync();
@@ -77,7 +76,7 @@ public class UsersController : BControllerBase
     user.IsEnabled = update.IsEnabled;
     user.IsAdmin = update.IsAdmin;
 
-    if (update.Password != null) user.Password = update.Password;
+    if (update.Password != null) user.Password = BCrypt.Net.BCrypt.HashPassword(update.Password);
     if (update.ApiSecret != null) user.ApiSecret = update.ApiSecret;
 
     userContext.Entry(user).State = EntityState.Modified;

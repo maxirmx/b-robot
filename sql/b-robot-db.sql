@@ -4,6 +4,7 @@
 
 START TRANSACTION;
 
+DROP TABLE IF EXISTS "btasks";
 DROP TABLE IF EXISTS "users";
 
 CREATE TABLE "users" (
@@ -23,9 +24,6 @@ CREATE UNIQUE INDEX "idx_users_email" ON "users" ("email");
 
 INSERT INTO "users" ("first_name", "patronimic", "last_name", "email", "password", "api_key", "api_secret", "is_enabled", "is_admin") VALUES
 ('Максим', 'Станиславович', 'Самсонов', 'maxirmx@sw.consulting', '$2a$11$PUWwhEUzqrusmtrDsH4wguSDVx1kmGcksoU1rOKjAcWkGKdGA55ZK', '', '', TRUE, TRUE);
-
-
-DROP TABLE IF EXISTS "btasks";
 
 CREATE TABLE "btasks" (
   "id"         SERIAL PRIMARY KEY,
@@ -47,7 +45,7 @@ CREATE TABLE "versions" (
   "date"    DATE NOT NULL
 );
 
-INSERT INTO "versions" ("id", "version", "date") VALUES
-(1, '0.1.0', '2023-12-02');
+INSERT INTO "versions" ("version", "date") VALUES
+('0.1.0', '2023-12-02');
 
 COMMIT;
