@@ -15,7 +15,7 @@ CREATE TABLE "users" (
   "password"        VARCHAR(64) NOT NULL,
   "api_key"         VARCHAR(64) NOT NULL,
   "api_secret"      VARCHAR(64) NOT NULL,
-  "is_enabled"       BOOLEAN NOT NULL DEFAULT TRUE,
+  "is_enabled"      BOOLEAN NOT NULL DEFAULT TRUE,
   "is_admin"        BOOLEAN NOT NULL DEFAULT FALSE
 );
 
@@ -33,7 +33,8 @@ CREATE TABLE "btasks" (
   "strategy"   VARCHAR(64) NOT NULL,
   "symbol1"    VARCHAR(16) NOT NULL,
   "symbol2"    VARCHAR(16) NOT NULL,
-  "threshold"  VARCHAR(32) NOT NULL
+  "threshold"  VARCHAR(32) NOT NULL,
+  "is_running" BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE INDEX "idx_btasks_user_id" ON "btasks" ("user_id");
@@ -47,6 +48,6 @@ CREATE TABLE "versions" (
 );
 
 INSERT INTO "versions" ("id", "version", "date") VALUES
-(1, '0.0.1', '2023-11-29');
+(1, '0.1.0', '2023-12-02');
 
 COMMIT;

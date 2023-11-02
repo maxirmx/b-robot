@@ -9,29 +9,10 @@ namespace b_robot_api.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/[controller]")]
-public class UsersController : ControllerBase
+public class UsersController : BControllerBase
 {
-  private const string _errorUserExists = "Пользователь с таким адресом электронной почты уже зарегистрирован.";
-  private const string _errorUserNotFound = "Не удалось найти пользователя.";
-  private const string _errorUnsufficienPriviledges = "Недостаточно прав для выполнения операции";
-
-  private readonly UserContext userContext;
-  private readonly int curUserId;
-
-  private ObjectResult _403()
+  public UsersController(IHttpContextAccessor httpContextAccessor, UserContext uContext) : base(httpContextAccessor, uContext)
   {
-    return StatusCode(StatusCodes.Status403Forbidden, new { message = _errorUnsufficienPriviledges });
-  }
-
-  private ObjectResult _404()
-  {
-    return StatusCode(StatusCodes.Status404NotFound, new { message = _errorUserNotFound });
-  }
-  public UsersController(IHttpContextAccessor httpContextAccessor, UserContext uContext)
-  {
-    userContext = uContext;
-    var uid = httpContextAccessor.HttpContext.Items["UserId"];
-    curUserId = (uid != null) ? (int)uid : 0;
   }
 
   // GET: api/users
@@ -39,7 +20,7 @@ public class UsersController : ControllerBase
   public async Task<ActionResult<IEnumerable<UserViewItem>>> GetUsers()
   {
     var ch = await userContext.CheckAdmin(curUserId);
-    if (!ch.Value)  return _403();
+    if (ch == null || !ch.Value)  return _403();
 
     return await userContext.UserViewItems();
   }
@@ -49,10 +30,10 @@ public class UsersController : ControllerBase
   public async Task<ActionResult<UserViewItem>> GetUser(int id)
   {
     var ch = await userContext.CheckAdminOrSameUser(id, curUserId);
-    if (!ch.Value)  return _403();
+    if (ch == null ||!ch.Value)  return _403();
 
     var user = await userContext.UserViewItem(id);
-    return (user == null) ? _404() : user;
+    return (user == null) ? _404User(id) : user;
   }
 
     // POST: api/users
@@ -60,9 +41,9 @@ public class UsersController : ControllerBase
   public async Task<ActionResult<Reference>> PostUser(User user)
   {
     var ch = await userContext.CheckAdmin(curUserId);
-    if (!ch.Value)  return _403();
+    if (ch == null ||!ch.Value)  return _403();
 
-    if (userContext.Exists(user.Email)) return Conflict(new { message = _errorUserExists }) ;
+    if (userContext.Exists(user.Email)) return _409Email(user.Email) ;
 
     string hashToStoreInDb = BCrypt.Net.BCrypt.HashPassword(user.Password);
     user.Password = hashToStoreInDb;
@@ -78,11 +59,15 @@ public class UsersController : ControllerBase
   [HttpPut("{id}")]
   public async Task<IActionResult> PutUser(int id, UserUpdateItem update)
   {
-    var ch = await userContext.CheckAdminOrSameUser(id, curUserId);
-    if (!ch.Value)  return _403();
-
     var user = await userContext.Users.FindAsync(id);
-    if (user == null) return _404();
+    if (user == null) return _404User(id);
+
+    bool adminRequired = (user.IsEnabled != update.IsEnabled) || (user.IsAdmin != update.IsAdmin);
+
+    ActionResult<bool> ch;
+    ch = adminRequired ? await userContext.CheckAdmin(curUserId) :
+                         await userContext.CheckAdminOrSameUser(id, curUserId);
+    if (ch == null ||!ch.Value)  return _403();
 
     user.FirstName = update.FirstName;
     user.LastName = update.LastName;
@@ -106,10 +91,10 @@ public class UsersController : ControllerBase
   public async Task<IActionResult> DeleteUser(int id)
   {
     var ch = await userContext.CheckAdmin(curUserId);
-    if (!ch.Value)  return _403();
+    if (ch == null ||!ch.Value)  return _403();
 
     var user = await userContext.Users.FindAsync(id);
-    if (user == null) return _404();
+    if (user == null) return _404User(id);
 
     userContext.Users.Remove(user);
     await userContext.SaveChangesAsync();

@@ -9,5 +9,15 @@ public class BTaskContext : DbContext
     }
 
     public DbSet<BTask> BTasks { get; set; }
-    public DbSet<User> Users { get; set; }
+
+    public bool Exists(int id)
+    {
+        return BTasks.Any(e => e.Id == id);
+    }
+
+    public async Task<List<BTask>> BTasksForUser(int userId)
+    {
+        return await BTasks.AsNoTracking().Where(x => x.UserId == userId).Select(x => x).ToListAsync();
+    }
+
 }
