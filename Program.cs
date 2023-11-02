@@ -91,7 +91,6 @@ using(var scope = app.Services.CreateScope())
             BJob bj = new (btask, user);
             BJobs.AddBJob(bj);
             if (btask.IsRunning) bj.Start();
-            Console.WriteLine($"{btask.Id} -- HasFailed: {btask.HasFailed}");
         }
     }
 }

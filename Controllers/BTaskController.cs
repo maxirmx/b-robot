@@ -53,7 +53,6 @@ public class BTasksController : BControllerBase
     foreach(BTask btask in res) {
       btask.IsRunning = BJobs.QueryRunning(btask.Id);
       btask.HasFailed = BJobs.QueryFailed(btask.Id);
-      Console.WriteLine($"{btask.Id} -- HasFailed: {btask.HasFailed}");
     }
 
     return res;

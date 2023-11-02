@@ -46,7 +46,7 @@ public class ZeroStrategy : IStrategy
 
     public void ProcessTick(string threadName, BinanceRestClient client)
     {
-        Console.WriteLine($"{threadName} -- ZeroStrategy");
+//        Console.WriteLine($"{threadName} -- ZeroStrategy");
     }
 }
 public abstract class SimpleStrategy : IStrategy
@@ -95,7 +95,7 @@ public abstract class SimpleStrategy : IStrategy
             Console.WriteLine($"Could not get price info: {priceInfo.Error?.Message}");
         }
 
-        Console.WriteLine($"{threadName} -- {Algo} {Threshold} {Pair}: {priceString} ({amountString} {Symbol1})");
+//        Console.WriteLine($"{threadName} -- {Algo} {Threshold} {Pair}: {priceString} ({amountString} {Symbol1})");
 
         if (amountValue > 0M && priceValue > 0M) {
             bool match = ((priceValue < Threshold) && less) ||
