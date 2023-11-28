@@ -11,6 +11,6 @@ FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/out ./
 COPY --from=build /app/out ./
-COPY sfx/s.pfx ./
+COPY sfx/*.* ./
 
 ENTRYPOINT ["dotnet", "b-robot.dll"]

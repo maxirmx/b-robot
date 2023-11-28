@@ -46,6 +46,6 @@ CREATE TABLE "versions" (
 );
 
 INSERT INTO "versions" ("version", "date") VALUES
-('0.1.0', '2023-12-02');
+('0.1.0', '2023-11-02');
 
 COMMIT;
